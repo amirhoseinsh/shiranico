@@ -1,5 +1,15 @@
 export type Locale = "fa" | "en";
-export type SectionId = "approach" | "sectors" | "about" | "contact";
+export type SectionId = "approach" | "portfolio" | "sectors" | "about" | "contact";
+
+export interface PortfolioCompany {
+  id: "wishwork" | "spash" | "iranchina";
+  name: string;
+  category: string;
+  description: string;
+  domain: string;
+  url: string;
+  logo: string;
+}
 
 export interface SiteContent {
   locale: Locale;
@@ -20,12 +30,20 @@ export interface SiteContent {
     secondary: string;
     footnote: string;
     scroll: string;
+    replayMotion: string;
   };
   approach: {
     label: string;
     title: string;
     introduction: string;
     items: { title: string; english: string; description: string }[];
+  };
+  portfolio: {
+    label: string;
+    title: string;
+    introduction: string;
+    visit: string;
+    companies: PortfolioCompany[];
   };
   sectors: {
     label: string;
@@ -58,6 +76,7 @@ const fa: SiteContent = {
   closeMenu: "بستن فهرست",
   navigation: [
     { id: "approach", label: "رویکرد ما" },
+    { id: "portfolio", label: "سرمایه‌گذاری‌ها" },
     { id: "sectors", label: "حوزه‌های فعالیت" },
     { id: "about", label: "درباره شیرانی" },
     { id: "contact", label: "ارتباط با ما" },
@@ -72,6 +91,7 @@ const fa: SiteContent = {
     secondary: "شروع یک گفت‌وگو",
     footnote: "ریشه در ایران، نگاه به افق‌های پیش رو",
     scroll: "کشف کنید",
+    replayMotion: "بازپخش",
   },
   approach: {
     label: "رویکرد ما",
@@ -81,6 +101,17 @@ const fa: SiteContent = {
       { title: "سرمایه‌گذاری", english: "Invest", description: "فرصت‌ها را در تلاقی نیازهای واقعی و ظرفیت رشد جست‌وجو می‌کنیم؛ از ایده‌های نو تا کسب‌وکارهای آماده توسعه." },
       { title: "ساختن", english: "Build", description: "در کنار سرمایه، در مسیر شکل‌گیری محصول، توسعه کسب‌وکار و تقویت توان اجرایی مشارکت می‌کنیم." },
       { title: "مالکیت بلندمدت", english: "Own", description: "ارزش را در گذر زمان می‌سازیم؛ با مالکیت مسئولانه، همراهی مستمر و توجه به پایداری کسب‌وکار." },
+    ],
+  },
+  portfolio: {
+    label: "سرمایه‌گذاری‌های ما",
+    title: "کسب‌وکارهایی که\nدر ساختنشان همراهیم.",
+    introduction: "از زیرساخت‌های دیجیتال تا فضاهای کار و آموزش؛ سرمایه‌گذاری‌های ما، روایت‌هایی از ساختن و توسعه کسب‌وکار هستند.",
+    visit: "مشاهده وب‌سایت",
+    companies: [
+      { id: "wishwork", name: "ویش‌ورک", category: "فناوری و توسعه محصول", description: "طراحی و توسعه محصولات دیجیتال، راهکارهای نرم‌افزاری سازمانی و هوش مصنوعی.", domain: "wishwork.org", url: "https://wishwork.org", logo: "/portfolio/wishwork.svg" },
+      { id: "spash", name: "اسپاش", category: "فناوری فضای کار", description: "پلتفرم جست‌وجو، رزرو و مدیریت فضاهای کار اشتراکی و فضاهای کاری انعطاف‌پذیر.", domain: "spash.space", url: "https://spash.space", logo: "/portfolio/spash.svg" },
+      { id: "iranchina", name: "ایران چین", category: "آموزش و خدمات بین‌المللی", description: "آموزش زبان چینی، خدمات تحصیلی و ترجمه، در پیوند میان ایران و چین.", domain: "iranchina.org", url: "https://www.iranchina.org", logo: "/portfolio/iranchina.svg" },
     ],
   },
   sectors: {
@@ -127,6 +158,7 @@ const en: SiteContent = {
   closeMenu: "Close navigation",
   navigation: [
     { id: "approach", label: "Our approach" },
+    { id: "portfolio", label: "Portfolio" },
     { id: "sectors", label: "Our focus" },
     { id: "about", label: "About SHIRANI" },
     { id: "contact", label: "Get in touch" },
@@ -141,6 +173,7 @@ const en: SiteContent = {
     secondary: "Start a conversation",
     footnote: "Rooted in Iran. Open to what comes next.",
     scroll: "Explore",
+    replayMotion: "Replay",
   },
   approach: {
     label: "Our approach",
@@ -150,6 +183,17 @@ const en: SiteContent = {
       { title: "Invest", english: "Invest", description: "We look for opportunity where real needs meet the potential for growth, from new ideas to businesses ready for their next chapter." },
       { title: "Build", english: "Build", description: "We contribute beyond capital, participating in product creation, business development and the capabilities needed to execute." },
       { title: "Own", english: "Own", description: "We take the long view, building value through responsible ownership, sustained involvement and resilient businesses." },
+    ],
+  },
+  portfolio: {
+    label: "Our portfolio",
+    title: "Businesses we\nhelp build.",
+    introduction: "From digital infrastructure to workspaces and education, our investments reflect different ways of building and growing businesses.",
+    visit: "Visit website",
+    companies: [
+      { id: "wishwork", name: "Wish Work", category: "Technology & product engineering", description: "Digital product design and engineering, enterprise software solutions and applied artificial intelligence.", domain: "wishwork.org", url: "https://wishwork.org", logo: "/portfolio/wishwork.svg" },
+      { id: "spash", name: "Spash", category: "Workspace technology", description: "A platform for discovering, booking and managing coworking spaces and flexible workspaces.", domain: "spash.space", url: "https://spash.space", logo: "/portfolio/spash.svg" },
+      { id: "iranchina", name: "IranChina", category: "Education & international services", description: "Chinese language learning, study-abroad services and translation, connecting Iran and China.", domain: "iranchina.org", url: "https://www.iranchina.org", logo: "/portfolio/iranchina.svg" },
     ],
   },
   sectors: {

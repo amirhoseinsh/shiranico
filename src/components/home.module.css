@@ -34,9 +34,25 @@
 .primaryLink:hover { background: #48c3ae; transform: translateY(-2px); }
 .secondaryLink { border-bottom: 1px solid #ffffff40; padding-block: 6px; color: #e1e6df; transition: border-color .2s; }
 .secondaryLink:hover { border-color: var(--color-teal); }
-.architecture { position: relative; width: 127%; margin-inline-start: -9%; align-self: stretch; display: flex; align-items: center; justify-content: center; min-width: 0; pointer-events: none; z-index: -1; }
-.architectureSvg { width: 100%; max-height: 660px; overflow: visible; animation: materialize 1.2s ease-out both; }
-.artCaption { position: absolute; bottom: 9px; inset-inline: 18% 5%; display: flex; justify-content: space-between; gap: 10px; font-size: 7px; letter-spacing: 1.8px; color: #829788; }
+.architecture { position: relative; width: 119%; margin-inline-start: -5%; align-self: stretch; min-width: 0; z-index: 0; }
+.motionStage { position: absolute; inset: -25px 0 28px; pointer-events: none; }
+.archPoster, .archLoadingDrawing, .archCanvas, .archNoScript { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.archPoster, .archNoScript img { object-fit: contain; }
+.archPoster, .archCanvas { opacity: 0; }
+.archLoadingDrawing { opacity: 1; }
+.architecture[data-status="scene"] .archCanvas { opacity: 1; }
+.architecture[data-status="scene"] .archLoadingDrawing, .architecture[data-status="fallback"] .archLoadingDrawing { opacity: 0; }
+.architecture[data-status="fallback"] .archPoster { opacity: 1; }
+.archNoScript { background: var(--color-charcoal); }
+.archNoScript img { width: 100%; height: 100%; }
+.motionFooter { position: absolute; bottom: 0; inset-inline: 11% 9%; display: flex; justify-content: flex-end; align-items: center; min-height: 36px; }
+.motionToggle { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 5px 0; background: none; border: 0; color: #9fb3a5; font-size: 10px; white-space: nowrap; }
+.motionToggle[hidden] { display: none; }
+.motionToggle:hover { color: #d0dfd5; }
+@media (prefers-reduced-motion: reduce) {
+  .archCanvas, .archLoadingDrawing, .motionFooter { display: none; }
+  .archPoster { opacity: 1; }
+}
 .heroBase { position: absolute; bottom: 31px; inset-inline: var(--gutter); display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 10px; color: #a2b2a5; }
 .explore { display: flex; align-items: center; gap: 12px; color: #d8dfd6; font-size: 11px; }
 .explore svg { width: 12px; height: 20px; }
@@ -62,6 +78,26 @@
 .englishCaption { font-size: 11px; letter-spacing: 1.8px; text-transform: uppercase; color: var(--color-teal-ink); text-align: start; align-self: flex-start; }
 .approachItem h3 { font-size: 27px; line-height: 1.4; font-weight: 500; }
 .approachItem p { font-size: 14px; line-height: 2.05; color: var(--color-muted); max-width: 320px; }
+.portfolio { padding-block: 18px 85px; }
+.portfolio .sectionLabel { padding-top: 38px; border-top: 1px solid var(--color-line); }
+.portfolioGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; margin-top: 48px; }
+.portfolioCompany { display: flex; flex-direction: column; min-width: 0; }
+.portfolioLogoStage { position: relative; height: 195px; display: flex; align-items: center; justify-content: center; background: #eceee8; border: 1px solid #d9ded4; transition: background .3s, border-color .3s; }
+.portfolioLogo { display: block; width: 70%; height: 85px; object-fit: contain; filter: grayscale(1); transition: transform .3s; }
+.wishworkLogo { filter: brightness(0); opacity: .82; width: 62%; height: 53px; }
+.spashLogo { width: 112px; height: 68px; }
+.iranchinaLogo { width: 74px; height: 74px; }
+.portfolioIndex { position: absolute; top: 17px; inset-inline-start: 19px; color: #717f73; font-size: 10px; }
+.portfolioVisit { position: absolute; bottom: 18px; inset-inline-end: 19px; color: #657c6d; }
+.portfolioVisit svg { width: 19px; height: 19px; }
+.portfolioInformation { flex: 1; display: flex; flex-direction: column; padding-block: 23px 0; }
+.portfolioCategory { font-size: 10px; color: var(--color-teal-ink); }
+.portfolioInformation h3 { margin-top: 10px; font-size: 27px; font-weight: 500; }
+.portfolioInformation p { color: var(--color-muted); font-size: 14px; line-height: 2; margin-top: 11px; margin-bottom: 23px; }
+.portfolioDomain { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-block: 12px; border-top: 1px solid var(--color-line); color: #526458; font-size: 11px; letter-spacing: .3px; }
+.portfolioDomain svg { width: 13px; height: 13px; }
+.portfolioCompany:hover .portfolioLogoStage, .portfolioCompany:focus-visible .portfolioLogoStage { background: #e3e9e0; border-color: #7a9f8b; }
+.portfolioCompany:hover .portfolioLogo { transform: translateY(-3px); }
 .sectors { padding-block: 40px 115px; }
 .sectors .sectionLabel { padding-top: 38px; border-top: 1px solid var(--color-line); }
 .sectors .sectionIntroduction { margin-bottom: 50px; }
@@ -122,16 +158,15 @@
 :global(html[lang="en"]) .sectionIntroduction > p,
 :global(html[lang="en"]) .approachItem p,
 :global(html[lang="en"]) .sectorRow > p,
+:global(html[lang="en"]) .portfolioInformation p,
 :global(html[lang="en"]) .about p { line-height: 1.85; }
 :global(html[lang="en"]) .approachTitle { margin-top: 38px; }
 :global(html[lang="en"]) .approachItem h3 { font-size: 36px; }
 :global(html[lang="en"]) .sectorName h3 { font-size: 23px; }
 :global(html[lang="en"]) .contact h2 { line-height: 1.2; }
-@keyframes materialize { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
 @media (min-width: 1441px) {
   .hero { min-height: 795px; }
-  .architectureSvg { max-height: 730px; }
 }
 @media (max-width: 1150px) {
   .header { height: 96px; }
@@ -164,13 +199,15 @@
   .hero { padding-top: 45px; min-height: 650px; }
   .heroDescription { font-size: 14px; }
   .heroActions { gap: 17px; flex-wrap: wrap; }
-  .architecture { width: 138%; margin-inline-start: -16%; }
-  .artCaption { display: none; }
+  .architecture { width: 129%; margin-inline-start: -12%; }
   .focusStrip a { font-size: 10px; gap: 25px; }
   .approach { padding-block: 85px 75px; }
   .approachGrid { gap: 28px; margin-top: 45px; }
   .approachItem h3 { font-size: 23px; }
   .approachItem p { font-size: 13px; }
+  .portfolioGrid { gap: 22px; }
+  .portfolioLogoStage { height: 165px; }
+  .portfolioInformation p { font-size: 13px; }
   .sectionIntroduction { grid-template-columns: 1fr 1fr; gap: 35px; }
   .sectionIntroduction > p { font-size: 14px; }
   .sectors { padding-bottom: 85px; }
@@ -203,7 +240,9 @@
   .heroActions { margin-top: 27px; gap: 25px; font-size: 12px; }
   .primaryLink { padding-inline: 18px; gap: 25px; }
   .architecture { width: 115%; max-width: 620px; margin: 0 auto; margin-inline-start: -7.5%; height: 420px; margin-block: 17px 5px; }
-  .architectureSvg { width: auto; height: 100%; max-width: 100%; }
+  .motionStage { inset: 0 0 30px; }
+  .motionFooter { inset-inline: 10%; bottom: -7px; }
+  .motionToggle { font-size: 9px; gap: 6px; }
   .heroBase { bottom: 23px; font-size: 9px; }
   .heroCoordinates { display: none; }
   .explore { font-size: 10px; }
@@ -221,6 +260,14 @@
   .approachItem h3 { font-size: 24px; }
   .englishCaption { font-size: 9px; }
   .approachItem p { margin-top: 17px; font-size: 13px; max-width: none; line-height: 1.95; }
+  .portfolio { padding-block: 15px 50px; }
+  .portfolio .sectionLabel { padding-top: 30px; }
+  .portfolioGrid { grid-template-columns: 1fr; gap: 34px; margin-top: 32px; }
+  .portfolioLogoStage { height: 180px; }
+  .portfolioLogo { max-width: 190px; }
+  .portfolioInformation { padding-top: 20px; }
+  .portfolioInformation h3 { font-size: 26px; }
+  .portfolioInformation p { margin-top: 10px; margin-bottom: 16px; max-width: 460px; }
   .sectors { padding-block: 15px 65px; }
   .sectors .sectionLabel { padding-top: 30px; }
   .sectors .sectionIntroduction { margin-bottom: 32px; }

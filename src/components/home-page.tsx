@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { content, contactEmail, type Locale } from "@/lib/content";
 import { Architecture, SectorGlyph } from "./architecture";
 import { ArchMark, Arrow, Wordmark } from "./brand";
@@ -32,7 +33,7 @@ export function HomePage({ locale }: { locale: Locale }) {
                 <a href="#contact" className={styles.secondaryLink}>{copy.hero.secondary}</a>
               </div>
             </div>
-            <Architecture />
+            <Architecture replayLabel={copy.hero.replayMotion} />
             <div className={styles.heroBase}>
               <span>{copy.hero.footnote}</span>
               <a href="#approach" className={styles.explore}>{copy.hero.scroll}<Arrow direction="down" /></a>
@@ -55,8 +56,30 @@ export function HomePage({ locale }: { locale: Locale }) {
                 <p>{item.description}</p>
               </div>)}</div>
             </section>
+            <section id="portfolio" tabIndex={-1} className={`${styles.portfolio} ${styles.container}`} aria-labelledby="portfolio-title">
+              <SectionLabel number={number(2)}>{copy.portfolio.label}</SectionLabel>
+              <div className={styles.sectionIntroduction}>
+                <h2 id="portfolio-title">{copy.portfolio.title}</h2>
+                <p>{copy.portfolio.introduction}</p>
+              </div>
+              <div className={styles.portfolioGrid}>{copy.portfolio.companies.map((company, index) => (
+                <a key={company.id} href={company.url} target="_blank" rel="noopener noreferrer" className={styles.portfolioCompany} aria-label={`${company.name} — ${copy.portfolio.visit}`} data-company={company.id}>
+                  <div className={styles.portfolioLogoStage}>
+                    <span className={styles.portfolioIndex}>{number(index + 1)}</span>
+                    <Image src={company.logo} alt={company.name} width={220} height={90} className={`${styles.portfolioLogo} ${styles[`${company.id}Logo`]}`} unoptimized />
+                    <span className={styles.portfolioVisit} aria-hidden="true"><Arrow /></span>
+                  </div>
+                  <div className={styles.portfolioInformation}>
+                    <span className={styles.portfolioCategory}>{company.category}</span>
+                    <h3>{company.name}</h3>
+                    <p>{company.description}</p>
+                    <span className={styles.portfolioDomain} dir="ltr">{company.domain}<Arrow /></span>
+                  </div>
+                </a>
+              ))}</div>
+            </section>
             <section id="sectors" tabIndex={-1} className={`${styles.sectors} ${styles.container}`} aria-labelledby="sectors-title">
-              <SectionLabel number={number(2)}>{copy.sectors.label}</SectionLabel>
+              <SectionLabel number={number(3)}>{copy.sectors.label}</SectionLabel>
               <div className={styles.sectionIntroduction}>
                 <h2 id="sectors-title">{copy.sectors.title}</h2>
                 <p>{copy.sectors.introduction}</p>
@@ -72,7 +95,7 @@ export function HomePage({ locale }: { locale: Locale }) {
           <section id="about" tabIndex={-1} className={styles.about} aria-labelledby="about-title">
             <div className={`${styles.container} ${styles.aboutInner}`}>
               <div className={styles.aboutContent}>
-                <SectionLabel number={number(3)}>{copy.about.label}</SectionLabel>
+                <SectionLabel number={number(4)}>{copy.about.label}</SectionLabel>
                 <h2 id="about-title">{copy.about.title[0]}<span> {copy.about.title[1]}</span></h2>
                 {copy.about.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
                 <div className={styles.aboutSignature}><span />{copy.about.signature}</div>
@@ -82,7 +105,7 @@ export function HomePage({ locale }: { locale: Locale }) {
           </section>
           <section id="contact" tabIndex={-1} className={styles.contact} aria-labelledby="contact-title">
             <div className={styles.container}>
-              <SectionLabel number={number(4)}>{copy.contact.label}</SectionLabel>
+              <SectionLabel number={number(5)}>{copy.contact.label}</SectionLabel>
               <div className={styles.contactLayout}>
                 <h2 id="contact-title">{copy.contact.title[0]}<span> {copy.contact.title[1]}</span></h2>
                 <p>{copy.contact.description}</p>
