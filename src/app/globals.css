@@ -1,0 +1,30 @@
+:root {
+  --color-paper: #f5f4f0;
+  --color-ink: #202624;
+  --color-muted: #666e68;
+  --color-teal: #00a693;
+  --color-teal-ink: #007f70;
+  --color-charcoal: #151c19;
+  --color-line: #d6d9d2;
+  --max-width: 1440px;
+  --gutter: clamp(24px, 5.5vw, 104px);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 30px; background: var(--color-paper); }
+body { margin: 0; font-family: var(--font-peyda), Tahoma, Arial, sans-serif; color: var(--color-ink); background: var(--color-paper); -webkit-font-smoothing: antialiased; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; }
+a { color: inherit; text-decoration: none; }
+button, a, summary { touch-action: manipulation; }
+button { cursor: pointer; }
+svg { display: block; }
+::selection { color: #fff; background: #007f70; }
+:focus-visible { outline: 2px solid var(--color-teal); outline-offset: 7px; }
+h1, h2, h3, p { margin: 0; }
+button { color: inherit; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
