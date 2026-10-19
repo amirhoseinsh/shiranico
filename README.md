@@ -29,9 +29,11 @@ npm start
 
 Brand colors: charcoal `#151C19`, warm off-white `#F5F4F0`, primary teal `#00A693`, with deeper teal `#007F70` for accessible text on light surfaces. The arch artwork is original vector geometry, not extracted from the moodboards.
 
-The hero takes motion inspiration from [8VC](https://www.8vc.com/). An original 4.6-second sequence starts with abstract circular drafting, pauses on the flat diagram, and resolves into a single beveled graphite arch during a quick dimensional turn. It settles completely, with no idle or pointer-driven movement. A discreet localized replay button appears after completion.
+The hero takes motion inspiration from [8VC](https://www.8vc.com/). An original 4.6-second sequence starts with abstract circular drafting, pauses on the flat diagram, and resolves into an open architectural arch during a quick dimensional turn. Grayscale front contours, `#00A693` inner/rear contours, and six depth connections describe the volume without filled surfaces. A faint, localized `#1C39BB` halo adds a small blue accent behind one rear curve. It settles completely, with no idle or pointer-driven movement. A discreet localized replay button appears after completion.
 
-The geometric definition and timing live in `src/lib/arch-model.ts`; the smooth circular profile, extruded mesh, studio lighting, and deterministic renderer live in `src/lib/arch-scene.ts`. Three.js loads dynamically only when a motion-enabled visitor sees the hero. Shaders are prepared before the opening; elapsed time pauses offscreen or in hidden tabs, and the animation frame loop stops at the final pose. Reduced-motion visitors, unavailable WebGL, and disabled JavaScript use `public/brand/arch-still.png`, rendered from the same scene. All assets are self-hosted.
+The geometric definition and timing live in `src/lib/arch-model.ts`; explicit smooth contours and the deterministic renderer live in `src/lib/arch-scene.ts`. Three.js `Line2`/`LineMaterial` maintain consistent CSS-pixel stroke widths. The drawing curves remain visible as the final front contours; unused construction lines fade after the turn. Three.js loads dynamically only when a motion-enabled visitor sees the hero. Shaders are prepared before the opening; elapsed time pauses offscreen or in hidden tabs, and the animation frame loop stops at the final pose. Reduced-motion visitors, unavailable WebGL, and disabled JavaScript use `public/brand/arch-still.png`, rendered from the same scene. All assets are self-hosted.
+
+The header divider draws from the brand side (right in Persian, left in English), after a 120ms delay over 880ms, with a brief teal leading highlight. CSS starts it independently of WebGL and hydration; navigation remains usable immediately. Arch replay does not repeat the divider. CSS scripting and reduced-motion media queries give no-JavaScript and reduced-motion visitors the completed, static line.
 
 To regenerate that tracked fallback and the ignored motion review package, use Node.js 24 and run:
 
@@ -39,7 +41,7 @@ To regenerate that tracked fallback and the ignored motion review package, use N
 node scripts/render-arch.mjs
 ```
 
-Open `design/motion/index.html` to review the isolated opening recording and four storyboard frames. The browser-generated recording includes a short hold after the 4.6-second sequence. This helper uses Node's TypeScript stripping API; the application itself retains the Node version requirement above.
+Open `design/motion/index.html` to review the isolated opening recording and storyboard frames, including the start and end of the dimensional turn. The browser-generated recording includes a short hold after the 4.6-second sequence. The renderer also checks transparent surfaces and stroke continuity at fixed times. This helper uses Node's TypeScript stripping API; the application itself retains the Node version requirement above.
 
 ## Portfolio
 
@@ -59,7 +61,7 @@ The browser check starts and stops its own production server on port 3100. Build
 npm run check:browser
 ```
 
-It checks both languages at 360, 768, and 1440 pixels, mobile navigation, keyboard access, language switching, portfolio logos and destination links, metadata, social assets, and the exclusion of the design archive. Motion checks cover completion, offscreen/hidden-tab suspension, pixel stability after settling and pointer movement, replay, reduced motion without WebGL initialization, blocked WebGL, and disabled JavaScript. When the local archive is present, it also verifies the proposal still prints to three A4 pages. Screenshots are written to ignored `test-results/`.
+It checks both languages at 360, 768, and 1440 pixels, mobile navigation, keyboard access, language switching, portfolio logos and destination links, metadata, social assets, and the exclusion of the design archive. Motion checks cover header direction/timing independently of delayed WebGL, completion, offscreen/hidden-tab suspension, pixel stability after settling and pointer movement, replay without repeating the header, reduced motion without WebGL initialization, blocked WebGL, and disabled JavaScript. When the local archive is present, it also verifies the proposal still prints to three A4 pages. Screenshots are written to ignored `test-results/`.
 
 Checks use an existing Chromium installation. Set `CHROME_PATH` to a browser executable if discovery fails, or install one with `npx playwright-core install chromium`. Set `SITE_URL` to test an already running server instead.
 

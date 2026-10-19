@@ -136,7 +136,7 @@ export function KineticArch({ replayLabel }: { replayLabel: string }) {
     <div ref={rootRef} className={styles.architecture} data-motion-art="" data-status={mode}>
       <div className={styles.motionStage} id="arch-sculpture" aria-hidden="true">
         <img className={styles.archPoster} src={poster} width="1024" height="1024" alt="" decoding="async" />
-        <svg className={styles.archLoadingDrawing} viewBox="-3.6 -3.6 7.2 7.2" fill="none"><path d="M-2.7 .5A2.43 2.43 0 0 1 -1.2-2.25M2.4-.7A2.43 2.43 0 0 0 .8-2.3" stroke="#a7baaf" strokeWidth=".007" opacity=".45"/></svg>
+        <svg className={styles.archLoadingDrawing} viewBox="-3.6 -3.6 7.2 7.2" fill="none"><path d="M-2.7 .5A2.43 2.43 0 0 1 -1.2-2.25M2.4-.7A2.43 2.43 0 0 0 .8-2.3" stroke="#d4d4d4" strokeWidth=".007" opacity=".45"/></svg>
         <canvas ref={canvasRef} className={styles.archCanvas} />
         <noscript><div className={styles.archNoScript}><img src={poster} width="1024" height="1024" alt="" /></div></noscript>
       </div>

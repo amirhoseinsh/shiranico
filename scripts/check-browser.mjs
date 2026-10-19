@@ -26,6 +26,43 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   const failedAssets = [];
   page.on("response", (response) => { if (response.status() >= 400) failedAssets.push(`${response.status()} ${response.url()}`); });
+
+  // Hold application scripts: the header must draw before hydration/WebGL.
+  for (const locale of ["fa", "en"]) {
+    const headerContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    let releaseScripts;
+    const scriptsReleased = new Promise(resolve => { releaseScripts = resolve; });
+    await headerContext.route("**/_next/static/**/*.js", async route => { await scriptsReleased; await route.continue(); });
+    const headerPage = await headerContext.newPage();
+    try {
+      await headerPage.goto(`${base}${locale === 'fa' ? '/' : '/en'}`, { waitUntil: "commit" });
+      await headerPage.waitForFunction(() => document.querySelector('header')?.getAnimations({ subtree: true }).some(animation => animation.animationName?.includes('headerDraw')));
+      const drawing = await headerPage.evaluate(() => {
+        const header = document.querySelector('header');
+        const animations = header.getAnimations({ subtree: true });
+        animations.forEach(animation => { animation.pause(); animation.currentTime = 400; });
+        const rule = getComputedStyle(header, '::after');
+        const highlight = getComputedStyle(header, '::before');
+        return { scale: new DOMMatrixReadOnly(rule.transform).a, origin: parseFloat(rule.transformOrigin), width: header.clientWidth, duration: rule.animationDuration, delay: rule.animationDelay, highlight: Number(highlight.opacity), interactive: rule.pointerEvents, elapsed: document.querySelector('[data-motion-art]').getAttribute('data-elapsed') };
+      });
+      assert.ok(drawing.scale > 0 && drawing.scale < 1, "Header should be partially drawn at 400ms");
+      assert.ok(Math.abs(drawing.origin - (locale === 'fa' ? drawing.width : 0)) < 1, "Header must draw from the brand side");
+      assert.equal(drawing.duration, "0.88s");
+      assert.equal(drawing.delay, "0.12s");
+      assert.ok(drawing.highlight > 0);
+      assert.equal(drawing.interactive, "none", "Divider must not intercept navigation");
+      assert.equal(drawing.elapsed, null, "Header should animate while application scripts are still pending");
+      await headerPage.screenshot({ path: `test-results/${locale}-header-drawing.png`, clip: { x: 0, y: 0, width: 1440, height: 115 } });
+      await headerPage.evaluate(() => document.querySelector('header').getAnimations({ subtree: true }).forEach(animation => { animation.currentTime = 1000; }));
+      assert.equal(await headerPage.locator('header').evaluate(header => new DOMMatrixReadOnly(getComputedStyle(header, '::after').transform).a), 1);
+      assert.equal(await headerPage.locator('header').evaluate(header => getComputedStyle(header, '::before').opacity), "0");
+    } finally {
+      releaseScripts();
+      await headerPage.waitForLoadState('load');
+      await headerContext.close();
+    }
+  }
+  console.log("PASS header drawing before application scripts: brand-side direction in both languages, 120ms delay, 880ms duration, highlight and completion");
   for (const locale of ["fa", "en"]) {
     const route = locale === "fa" ? "/" : "/en";
     for (const width of [360, 768, 1440]) {
@@ -115,13 +152,19 @@ try {
   await page.mouse.move(bounds.x + bounds.width * .3, bounds.y + bounds.height * .3);
   await page.waitForTimeout(350);
   assert.ok(beforePointer.equals(await artwork.screenshot()), "The settled arch must remain pixel-identical after pointer movement");
+  const headerBeforeReplay = await page.locator('header').screenshot();
   await replay.click();
   assert.ok(Number(await artwork.getAttribute("data-elapsed")) < 800, "Replay must restart the drawing");
   assert.equal(await replay.isVisible(), false);
+  assert.ok(headerBeforeReplay.equals(await page.locator('header').screenshot()), "Arch replay must not repeat the header animation");
   await page.waitForFunction(() => document.querySelector("[data-motion-art]")?.getAttribute("data-phase") === "settled", undefined, {timeout:20000});
   assert.equal(await replay.isVisible(), true);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.waitForFunction(() => document.querySelector("[data-motion-art]")?.getAttribute("data-status") === "fallback");
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-motion-art]');
+    const poster = root?.querySelector('img');
+    return root?.getAttribute('data-status') === 'fallback' && poster && getComputedStyle(poster).opacity === '1';
+  });
   assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior), "auto");
   assert.equal(await artwork.getAttribute("data-running"), "false");
   assert.equal(await replay.isVisible(), false);
@@ -137,6 +180,9 @@ try {
   await reducedPage.goto(base, {waitUntil:"networkidle"});
   await reducedPage.waitForFunction(()=>document.querySelector('[data-motion-art]')?.getAttribute('data-status')==='fallback');
   assert.equal(await reducedPage.evaluate(()=>window.webglCalls),0,"Reduced-motion visitors should not initialize WebGL");
+  assert.equal(await reducedPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').transform),'none');
+  assert.equal(await reducedPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').animationName),'none');
+  assert.equal(await reducedPage.locator('header').evaluate(header=>getComputedStyle(header,'::before').opacity),'0');
   await reducedContext.close();
 
   const blocked = await browser.newContext();
@@ -156,6 +202,9 @@ try {
   const still=noScriptPage.locator('noscript img');
   assert.ok(await still.isVisible());
   assert.ok(await still.evaluate(image=>image.complete&&image.naturalWidth===1024));
+  assert.equal(await noScriptPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').transform),'none');
+  assert.equal(await noScriptPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').animationName),'none');
+  assert.equal(await noScriptPage.locator('header').evaluate(header=>getComputedStyle(header,'::before').opacity),'0');
   await noScript.close();
   console.log("PASS timed reveal, offscreen/hidden-tab suspension, still final pose, replay, reduced motion, unavailable WebGL and no-JS fallback");
   assert.deepEqual(errors, [], "Browser runtime errors");

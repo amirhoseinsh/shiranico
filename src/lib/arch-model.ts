@@ -1,11 +1,10 @@
-/** One geometric definition, shared by the drawing, solid and preview tools. */
+/** One geometric definition, shared by the drawing, contours and preview tools. */
 export const ARCH = {
   halfWidth: 1.65,
   peak: 2.3,
   bottom: -2.5,
   thickness: .29,
   depth: .62,
-  bevel: .025,
   viewSize: 7.2,
 } as const;
 

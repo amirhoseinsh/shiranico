@@ -1,6 +1,8 @@
 import * as THREE from "three";
-import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
-import { ARCH, ARC_SAMPLES, circleCenter, outerRadius, innerRadius, leftPeakAngle, rightPeakAngle, innerPeakAngle, progress, smooth, easeOut, mix } from "./arch-model";
+import { Line2 } from "three/addons/lines/Line2.js";
+import { LineGeometry } from "three/addons/lines/LineGeometry.js";
+import { LineMaterial } from "three/addons/lines/LineMaterial.js";
+import { ARCH, ARC_SAMPLES, circleCenter, outerRadius, innerRadius, innerPeak, leftPeakAngle, rightPeakAngle, progress, smooth, easeOut, mix } from "./arch-model";
 
 export interface ArchScene {
   ready: Promise<unknown>;
@@ -9,6 +11,7 @@ export interface ArchScene {
   dispose: () => void;
 }
 
+/** Explicit architectural contours: no filled faces or triangulated wireframe. */
 export function createArchScene(canvas: HTMLCanvasElement, pixelRatio = Math.min(window.devicePixelRatio || 1, 2)): ArchScene {
   const context = canvas.getContext("webgl2", { alpha: true, antialias: true, premultipliedAlpha: true, powerPreference: "low-power" });
   if (!context) throw new Error("WebGL2 unavailable");
@@ -16,89 +19,87 @@ export function createArchScene(canvas: HTMLCanvasElement, pixelRatio = Math.min
   renderer.setPixelRatio(pixelRatio);
   renderer.setClearColor(0x000000, 0);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-3.6, 3.6, 3.6, -3.6, .1, 50);
   camera.position.set(0, 0, 14);
-  camera.lookAt(0, 0, 0);
-
-  const environment = new RoomEnvironment();
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const environmentTarget = pmrem.fromScene(environment, .06);
-  scene.environment = environmentTarget.texture;
-  environment.dispose();
-  pmrem.dispose();
-  scene.add(new THREE.HemisphereLight(0xe8ebe9, 0x111a16, 1.2));
-  const key = new THREE.DirectionalLight(0xf5f5f2, 3.8);
-  key.position.set(-3.5, 5, 6);
-  scene.add(key);
-  const fill = new THREE.DirectionalLight(0xbec6c2, 1.0);
-  fill.position.set(4, 1, 3);
-  scene.add(fill);
-  const rim = new THREE.DirectionalLight(0x00a693, 1.1);
-  rim.position.set(3, 2, -3);
-  scene.add(rim);
-
   const assembly = new THREE.Group();
   scene.add(assembly);
-  const shape = new THREE.Shape();
-  shape.moveTo(-ARCH.halfWidth, ARCH.bottom);
-  shape.lineTo(-ARCH.halfWidth, 0);
-  shape.absarc(circleCenter, 0, outerRadius, Math.PI, leftPeakAngle, true);
-  shape.absarc(-circleCenter, 0, outerRadius, rightPeakAngle, 0, true);
-  shape.lineTo(ARCH.halfWidth, ARCH.bottom);
-  shape.lineTo(ARCH.halfWidth - ARCH.thickness, ARCH.bottom);
-  shape.lineTo(ARCH.halfWidth - ARCH.thickness, 0);
-  shape.absarc(-circleCenter, 0, innerRadius, 0, innerPeakAngle, false);
-  shape.absarc(circleCenter, 0, innerRadius, Math.PI - innerPeakAngle, Math.PI, false);
-  shape.lineTo(-ARCH.halfWidth + ARCH.thickness, ARCH.bottom);
-  shape.closePath();
+  const materials: LineMaterial[] = [];
+  const geometries: LineGeometry[] = [];
 
-  const geometry = new THREE.ExtrudeGeometry(shape, { depth: ARCH.depth, steps: 1, bevelEnabled: true, bevelThickness: ARCH.bevel, bevelSize: ARCH.bevel, bevelSegments: 5, curveSegments: 64 });
-  geometry.translate(0, 0, -ARCH.depth / 2);
-  const front = new THREE.MeshStandardMaterial({ color: 0x515754, roughness: .53, metalness: .32, envMapIntensity: .72, transparent: true, opacity: 0 });
-  const sides = new THREE.MeshStandardMaterial({ color: 0x333c37, roughness: .45, metalness: .4, envMapIntensity: .8, transparent: true, opacity: 0 });
-  const solid = new THREE.Mesh(geometry, [front, sides]);
-  assembly.add(solid);
+  function line(points: number[], color: number, width: number) {
+    const geometry = new LineGeometry().setPositions(points);
+    const material = new LineMaterial({ color, linewidth: width, transparent: true, opacity: 0, depthTest: false, depthWrite: false, toneMapped: false });
+    const object = new Line2(geometry, material);
+    object.frustumCulled = false;
+    assembly.add(object);
+    materials.push(material);
+    geometries.push(geometry);
+    return object;
+  }
 
-  const lineMaterials = [0, 1].map(() => new THREE.LineBasicMaterial({ color: 0xb8c8be, transparent: true, opacity: .65, toneMapped: false, depthTest: false }));
-  const arcArrays = [new Float32Array((ARC_SAMPLES + 1) * 3), new Float32Array((ARC_SAMPLES + 1) * 3)];
-  const arcGeometries = arcArrays.map(array => new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(array, 3).setUsage(THREE.DynamicDrawUsage)));
-  const arcs = arcGeometries.map((geometry, index) => new THREE.Line(geometry, lineMaterials[index]));
-  for (const arc of arcs) { arc.frustumCulled = false; arc.renderOrder = 2; assembly.add(arc); }
+  function curve(side: number, radius: number, start: number, end: number, z: number, samples = ARC_SAMPLES) {
+    const points: number[] = [];
+    for (let i = 0; i <= samples; i++) {
+      const angle = mix(start, end, i / samples);
+      points.push((side === 0 ? circleCenter : -circleCenter) + Math.cos(angle) * radius, Math.sin(angle) * radius, z);
+    }
+    return points;
+  }
 
-  const guideMaterial = new THREE.LineBasicMaterial({ color: 0x8ba597, transparent: true, opacity: .25, toneMapped: false, depthTest: false });
-  const guideGeometry = new THREE.BufferGeometry().setFromPoints([
-    new THREE.Vector3(-3.3, 0, 0), new THREE.Vector3(3.3, 0, 0),
-    new THREE.Vector3(-circleCenter, -.1, 0), new THREE.Vector3(-circleCenter, .1, 0),
-    new THREE.Vector3(circleCenter, -.1, 0), new THREE.Vector3(circleCenter, .1, 0),
-  ]);
-  const guides = new THREE.LineSegments(guideGeometry, guideMaterial);
-  assembly.add(guides);
+  function contour(radius: number, z: number) {
+    const halfWidth = radius - circleCenter;
+    const peakAngle = Math.acos(circleCenter / radius);
+    return [
+      -halfWidth, ARCH.bottom, z,
+      ...curve(0, radius, Math.PI, Math.PI - peakAngle, z),
+      ...curve(1, radius, peakAngle, 0, z).slice(3),
+      halfWidth, ARCH.bottom, z,
+    ];
+  }
 
-  const legMaterial = new THREE.LineBasicMaterial({ color: 0xd4dfd8, transparent: true, opacity: 0, toneMapped: false, depthTest: false });
-  const legArray = new Float32Array(12);
-  const legGeometry = new THREE.BufferGeometry().setAttribute("position", new THREE.BufferAttribute(legArray, 3).setUsage(THREE.DynamicDrawUsage));
-  const legs = new THREE.LineSegments(legGeometry, legMaterial);
-  legs.frustumCulled = false;
-  legs.renderOrder = 2;
-  assembly.add(legs);
+  const frontZ = ARCH.depth / 2;
+  const rearZ = -frontZ;
+  // The two circles become the principal front curves; they never disappear.
+  const arcs = [0, 1].map(side => line(curve(side, outerRadius, 0, Math.PI * 2, frontZ), 0xd4d4d4, 1.05));
+  const constructionEchoes = [0, 1].map(side => line(curve(side, outerRadius, 0, Math.PI * 2, 0), 0x9b9b9b, .6));
+  const legs = [-1, 1].map(side => line([side * ARCH.halfWidth, 0, frontZ, side * ARCH.halfWidth, ARCH.bottom, frontZ], 0xd4d4d4, 1.05));
+  const innerFront = line(contour(innerRadius, frontZ), 0x00a693, .9);
+  const outerRear = line(contour(outerRadius, rearZ), 0x00a693, .8);
+  const innerRear = line(contour(innerRadius, rearZ), 0x00a693, .7);
 
-  const shadowCanvas = document.createElement("canvas");
-  shadowCanvas.width = 128; shadowCanvas.height = 128;
-  const brush = shadowCanvas.getContext("2d")!;
-  const gradient = brush.createRadialGradient(64, 64, 0, 64, 64, 64);
-  gradient.addColorStop(0, "rgba(0,0,0,.45)"); gradient.addColorStop(.4, "rgba(0,0,0,.2)"); gradient.addColorStop(1, "rgba(0,0,0,0)");
-  brush.fillStyle = gradient; brush.fillRect(0, 0, 128, 128);
-  const shadowTexture = new THREE.CanvasTexture(shadowCanvas);
-  const shadowMaterial = new THREE.MeshBasicMaterial({ map: shadowTexture, transparent: true, opacity: 0, depthWrite: false, toneMapped: false });
-  const shadowGeometry = new THREE.PlaneGeometry(5, 2.7);
-  const shadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.set(0, ARCH.bottom - .035, .1);
-  assembly.add(shadow);
+  // Six depth connections: four foot corners and the two pointed crowns.
+  const anchors = [
+    [-ARCH.halfWidth, ARCH.bottom], [ARCH.halfWidth, ARCH.bottom],
+    [-ARCH.halfWidth + ARCH.thickness, ARCH.bottom], [ARCH.halfWidth - ARCH.thickness, ARCH.bottom],
+    [0, ARCH.peak], [0, innerPeak],
+  ];
+  const connections = anchors.map(([x, y]) => line([x, y, frontZ, x, y, rearZ], 0x00a693, .75));
+  const caps = [-1, 1].flatMap(side => [frontZ, rearZ].map(z => line([
+    side * ARCH.halfWidth, ARCH.bottom, z, side * (ARCH.halfWidth - ARCH.thickness), ARCH.bottom, z,
+  ], 0xa8a8a8, .7)));
+
+  // A localized, low-opacity blue trace behind the rear crown, never a surface.
+  const haloPoints = curve(0, outerRadius, Math.PI - .14, leftPeakAngle, rearZ, 48);
+  const halos = [12, 7, 3].map(width => line(haloPoints, 0x1c39bb, width));
+  halos.forEach(halo => { halo.renderOrder = -1; });
+
+  const guides = [
+    line([-3.3, 0, 0, 3.3, 0, 0], 0x9b9b9b, .6),
+    ...[-circleCenter, circleCenter].map(x => line([x, -.1, 0, x, .1, 0], 0x9b9b9b, .6)),
+  ];
+
+  // Update the existing interleaved buffer rather than allocating GPU buffers per frame.
+  function updatePoints(object: Line2, points: number[]) {
+    const start = object.geometry.attributes.instanceStart as THREE.InterleavedBufferAttribute;
+    const end = object.geometry.attributes.instanceEnd as THREE.InterleavedBufferAttribute;
+    for (let i = 0; i < points.length / 3 - 1; i++) {
+      start.setXYZ(i, points[i * 3], points[i * 3 + 1], points[i * 3 + 2]);
+      end.setXYZ(i, points[i * 3 + 3], points[i * 3 + 4], points[i * 3 + 5]);
+    }
+    start.data.needsUpdate = true;
+  }
 
   let currentTime = 0;
   let disposed = false;
@@ -107,38 +108,30 @@ export function createArchScene(canvas: HTMLCanvasElement, pixelRatio = Math.min
     currentTime = time;
     const reveal = easeOut(progress(time, 2650, 3250));
     const settle = easeOut(progress(time, 3250, 4600));
-    assembly.rotation.set(mix(0, .075, reveal) + .03 * settle, mix(0, -.34, reveal) - .079 * settle, 0);
+    const detail = smooth(progress(time, 2710, 3300));
+    const rear = smooth(progress(time, 2820, 3500));
+    assembly.rotation.set(.075 * reveal + .03 * settle, -.34 * reveal - .079 * settle, 0);
     assembly.position.y = .08;
-    solid.scale.z = mix(.001, 1, reveal);
-    const opacity = smooth(progress(time, 2750, 3070));
-    front.opacity = opacity; sides.opacity = opacity;
-    solid.visible = opacity > 0;
-    shadowMaterial.opacity = smooth(progress(time, 2850, 3650));
-    guideMaterial.opacity = .23 * smooth(progress(time, 80, 750)) * (1 - smooth(progress(time, 2650, 3050)));
+    assembly.scale.z = mix(.001, 1, reveal);
 
     for (let side = 0; side < 2; side++) {
-      const array = arcArrays[side];
-      const sourceCenter = side === 0 ? circleCenter : -circleCenter;
-      const startAngle = side === 0 ? leftPeakAngle : 0;
-      const endAngle = mix(startAngle + Math.PI * 2, side === 0 ? Math.PI : rightPeakAngle, reveal);
-      for (let i = 0; i <= ARC_SAMPLES; i++) {
-        const u = i / ARC_SAMPLES;
-        const angle = mix(startAngle, endAngle, u);
-        array[i * 3] = sourceCenter + Math.cos(angle) * outerRadius;
-        array[i * 3 + 1] = Math.sin(angle) * outerRadius;
-        array[i * 3 + 2] = ARCH.depth / 2 * reveal + .035;
-      }
-      arcGeometries[side].attributes.position.needsUpdate = true;
-      const drawn = smooth(progress(time, side === 0 ? 60 : 390, side === 0 ? 1900 : 2200));
-      arcGeometries[side].setDrawRange(0, Math.floor(drawn * (ARC_SAMPLES + 1)));
-      lineMaterials[side].opacity = .62 * (1 - smooth(progress(time, 2750, 3100)));
-      arcs[side].visible = time < 3100;
+      const start = side === 0 ? leftPeakAngle : 0;
+      const end = mix(start + Math.PI * 2, side === 0 ? Math.PI : rightPeakAngle, reveal);
+      updatePoints(arcs[side], curve(side, outerRadius, start, end, frontZ));
+      arcs[side].geometry.instanceCount = Math.floor(ARC_SAMPLES * smooth(progress(time, side === 0 ? 60 : 390, side === 0 ? 1900 : 2200)));
+      arcs[side].material.opacity = .62 + .22 * reveal;
+      const x = (side === 0 ? -1 : 1) * ARCH.halfWidth;
+      updatePoints(legs[side], [x, 0, frontZ, x, ARCH.bottom * reveal, frontZ]);
+      legs[side].material.opacity = .84 * smooth(progress(time, 2650, 2850));
     }
-    const legDepth = ARCH.depth / 2 * reveal + .035;
-    legArray.set([-ARCH.halfWidth, 0, legDepth, -ARCH.halfWidth, ARCH.bottom * reveal, legDepth, ARCH.halfWidth, 0, legDepth, ARCH.halfWidth, ARCH.bottom * reveal, legDepth]);
-    legGeometry.attributes.position.needsUpdate = true;
-    legMaterial.opacity = .65 * smooth(progress(time, 2650, 2800)) * (1 - smooth(progress(time, 2920, 3300)));
-    rim.intensity = .65 + .45 * settle;
+    innerFront.material.opacity = .8 * detail;
+    outerRear.material.opacity = .44 * rear;
+    innerRear.material.opacity = .28 * rear;
+    connections.forEach(edge => { edge.material.opacity = .43 * rear; });
+    caps.forEach(edge => { edge.material.opacity = .44 * detail; });
+    halos.forEach((halo, index) => { halo.material.opacity = (.006 + .003 * index) * rear; });
+    constructionEchoes.forEach(echo => { echo.material.opacity = .12 * reveal * (1 - smooth(progress(time, 3250, 3650))); });
+    guides.forEach(guide => { guide.material.opacity = .23 * smooth(progress(time, 80, 750)) * (1 - smooth(progress(time, 3250, 3650))); });
     renderer.render(scene, camera);
   }
 
@@ -152,24 +145,20 @@ export function createArchScene(canvas: HTMLCanvasElement, pixelRatio = Math.min
     camera.bottom = -viewHeight / 2;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
+    materials.forEach(material => material.resolution.set(width, height));
     renderAt(currentTime);
   }
 
   resize(canvas.clientWidth || 720, canvas.clientHeight || 720);
-  solid.visible = true;
-  const ready = renderer.compileAsync(scene, camera);
   return {
-    ready,
+    ready: renderer.compileAsync(scene, camera),
     renderAt,
     resize,
     dispose() {
       if (disposed) return;
       disposed = true;
-      geometry.dispose(); front.dispose(); sides.dispose();
-      for (const geometry of arcGeometries) geometry.dispose();
-      for (const material of lineMaterials) material.dispose();
-      guideGeometry.dispose(); guideMaterial.dispose(); legGeometry.dispose(); legMaterial.dispose();
-      shadowGeometry.dispose(); shadowMaterial.dispose(); shadowTexture.dispose(); environmentTarget.dispose();
+      geometries.forEach(geometry => geometry.dispose());
+      materials.forEach(material => material.dispose());
       renderer.dispose();
     },
   };
