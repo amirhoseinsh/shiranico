@@ -1,0 +1,21 @@
+.rule { position: absolute; display: block; pointer-events: none; }
+.top { top: 0; inset-inline: 0; height: 1px; }
+.bottom { bottom: 0; inset-inline: 0; height: 1px; }
+.start { inset-inline-start: 0; inset-block: 0; width: 1px; }
+.end { inset-inline-end: 0; inset-block: 0; width: 1px; }
+.ink { position: absolute; inset: 0; display: block; background: var(--rule-color, var(--color-line)); transform-origin: left center; }
+:global(html[dir="rtl"]) .ink { transform-origin: right center; }
+.rule[data-axis="y"] .ink { transform-origin: center top; }
+
+/* Without scripting, or before enhancement, every rule is already complete. */
+@media (prefers-reduced-motion: no-preference) {
+  .rule[data-line-state="pending"] .ink { transform: scaleX(0); }
+  .rule[data-line-state="drawn"] .ink { animation: drawAcross 1500ms ease both; }
+  .rule[data-axis="y"][data-line-state="pending"] .ink { transform: scaleY(0); }
+  .rule[data-axis="y"][data-line-state="drawn"] .ink { animation: drawDown 2000ms ease both; }
+  .art[data-line-state="pending"] :is(path, circle, line, polyline, rect) { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .art[data-line-state="drawn"] :is(path, circle, line, polyline, rect) { stroke-dasharray: 1; animation: drawStroke 1800ms ease var(--stroke-delay, 0ms) both; }
+}
+@keyframes drawAcross { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes drawDown { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes drawStroke { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { content, siteUrl, type Locale } from "./content";
 
-export function createMetadata(locale: Locale): Metadata {
-  const copy = content[locale];
-  const url = locale === "fa" ? siteUrl : `${siteUrl}/en`;
+export function createMetadata(locale: Locale, page?: { title: string; description: string; path: string }): Metadata {
+  const copy = page ?? content[locale];
+  const path = page?.path ?? "";
+  const persianUrl = `${siteUrl}${path}`;
+  const englishUrl = `${siteUrl}/en${path}`;
+  const url = locale === "fa" ? persianUrl : englishUrl;
   return {
     metadataBase: new URL(siteUrl),
     title: copy.title,
@@ -11,7 +14,7 @@ export function createMetadata(locale: Locale): Metadata {
     applicationName: "SHIRANI",
     alternates: {
       canonical: url,
-      languages: { fa: siteUrl, en: `${siteUrl}/en`, "x-default": siteUrl },
+      languages: { fa: persianUrl, en: englishUrl, "x-default": persianUrl },
     },
     icons: { icon: "/icon.svg", apple: "/brand/apple-touch-icon.png" },
     openGraph: {

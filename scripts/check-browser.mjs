@@ -126,6 +126,84 @@ try {
   await entryContext.close();
   console.log('PASS SVG language arrow, first-screen artwork at three phone sizes in both languages, delayed entry playback, and short landscape viewport');
 
+  const lineContext = await browser.newContext();
+  const linePage = await lineContext.newPage();
+  linePage.on('pageerror', error => errors.push(error.message));
+  for (const locale of ['fa', 'en']) for (const width of [360, 1440]) {
+    await linePage.setViewportSize({ width, height: 900 });
+    await linePage.goto(`${base}${locale === 'fa' ? '/' : '/en'}`, { waitUntil: 'networkidle' });
+    const rule = linePage.locator('#portfolio [data-draw-line][data-axis="x"]').first();
+    await linePage.waitForFunction(() => document.querySelector('#portfolio [data-draw-line]')?.getAttribute('data-line-state') === 'pending');
+    assert.equal(await rule.locator('span').evaluate(ink => new DOMMatrixReadOnly(getComputedStyle(ink).transform).a), 0, 'Offscreen ink should wait to draw');
+    const before = await rule.boundingBox();
+    await rule.evaluate(rule => window.scrollTo({ top: scrollY + rule.getBoundingClientRect().top - innerHeight * .65, behavior: 'instant' }));
+    await linePage.waitForFunction(() => document.querySelector('#portfolio [data-draw-line]')?.getAttribute('data-line-state') === 'drawn');
+    await linePage.waitForTimeout(200);
+    const partial = await rule.locator('span').evaluate(ink => ({ scale: new DOMMatrixReadOnly(getComputedStyle(ink).transform).a, origin: parseFloat(getComputedStyle(ink).transformOrigin), duration: ink.getAnimations()[0].effect.getTiming().duration, start: ink.getAnimations()[0].startTime }));
+    assert.ok(partial.scale > 0 && partial.scale < 1, 'Rule must visibly draw through an intermediate width');
+    assert.ok(Math.abs(partial.origin - (locale === 'fa' ? before.width : 0)) < 1, 'Rules should draw in the document reading direction');
+    assert.equal(partial.duration, 1500);
+    const during = await rule.boundingBox();
+    assert.equal(during.width, before.width, 'Drawing must not change the rule layout box');
+    assert.equal(during.height, before.height);
+    await linePage.screenshot({ path: `test-results/${locale}-${width}-line-drawing.png` });
+    const vertical = linePage.locator('#portfolio [data-draw-line][data-axis="y"]').first();
+    await vertical.scrollIntoViewIfNeeded();
+    await linePage.waitForFunction(() => document.querySelector('#portfolio [data-axis="y"]')?.getAttribute('data-line-state') === 'drawn');
+    assert.equal(await vertical.locator('span').evaluate(ink => ink.getAnimations()[0].effect.getTiming().duration), 2000);
+    const art = linePage.locator('#sectors [data-draw-art]').first();
+    await art.scrollIntoViewIfNeeded();
+    await linePage.waitForFunction(() => document.querySelector('#sectors [data-draw-art]')?.getAttribute('data-line-state') === 'drawn');
+    assert.equal(await art.locator('path').first().getAttribute('pathLength'), '1');
+    await linePage.waitForFunction(() => getComputedStyle(document.querySelector('#sectors [data-draw-art] path')).strokeDashoffset === '0px');
+    const heroColumn = await linePage.locator('main > section [data-column-rule]').first().boundingBox();
+    assert.ok(heroColumn.height > 400 && heroColumn.width === 1, 'Hero should have a tall, visible structural rule');
+    if (width > 700) {
+      const sectorColumn = linePage.locator('#sectors [data-column-rule]');
+      const columnBox = await sectorColumn.boundingBox();
+      assert.ok(columnBox.height > 600 && columnBox.width === 1, 'Sector divider must span the table, not just an icon or label');
+      const firstRow = linePage.locator('#sectors article').first();
+      const titleBox = await firstRow.locator('h3').boundingBox();
+      const descriptionBox = await firstRow.locator('p').boundingBox();
+      if (locale === 'fa') {
+        assert.ok(columnBox.x < titleBox.x && columnBox.x > descriptionBox.x + descriptionBox.width, 'RTL table rule belongs between title and description');
+      } else {
+        assert.ok(columnBox.x > titleBox.x + titleBox.width && columnBox.x < descriptionBox.x, 'LTR table rule belongs between title and description');
+      }
+      for (const column of await linePage.locator('#portfolio [data-column-rule]').all()) {
+        const box = await column.boundingBox();
+        assert.ok(box.height > 300 && box.width === 1, 'Portfolio divider must span the full company column');
+      }
+      await sectorColumn.locator('[data-draw-line] > span').evaluate(ink => Promise.all(ink.getAnimations().map(animation => animation.finished)));
+      await linePage.locator('#sectors').screenshot({ path: `test-results/${locale}-${width}-vertical-sectors.png` });
+    } else {
+      const rail = linePage.locator('main > div:has(> #approach) > [data-column-rule]');
+      const railBox = await rail.boundingBox();
+      assert.ok(railBox.height > 1500 && railBox.width === 1, 'Stacked phone sections should keep a continuous vertical gutter rail');
+      assert.ok(locale === 'fa' ? railBox.x > width - 24 : railBox.x < 24, 'Phone rail must stay in the gutter, away from copy');
+    }
+    await linePage.locator('#about').scrollIntoViewIfNeeded();
+    const aboutColumn = linePage.locator('#about [data-column-rule]:visible');
+    assert.equal(await aboutColumn.count(), 1);
+    assert.ok((await aboutColumn.boundingBox()).height >= 430, 'About divider must span the section height');
+    await linePage.waitForFunction(() => [...document.querySelectorAll('#about [data-column-rule]')].filter(column => column.getBoundingClientRect().width > 0).every(column => column.querySelector('[data-draw-line]').getAttribute('data-line-state') === 'drawn'));
+    await aboutColumn.locator('[data-draw-line] > span').evaluate(ink => Promise.all(ink.getAnimations().map(animation => animation.finished)));
+    await linePage.locator('#about').screenshot({ path: `test-results/${locale}-${width}-vertical-about.png` });
+    await linePage.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await rule.scrollIntoViewIfNeeded();
+    const finished = await rule.locator('span').evaluate(ink => ({ scale: new DOMMatrixReadOnly(getComputedStyle(ink).transform).a, start: ink.getAnimations()[0].startTime, state: ink.getAnimations()[0].playState }));
+    assert.equal(finished.scale, 1);
+    assert.equal(finished.start, partial.start, 'Returning to a section must not replay or erase its lines');
+    assert.equal(finished.state, 'finished');
+  }
+  await linePage.emulateMedia({ reducedMotion: 'reduce' });
+  await linePage.waitForFunction(() => [...document.querySelectorAll('[data-draw-line], [data-draw-art]')].every(line => line.getAttribute('data-line-state') === 'complete'));
+  assert.equal(await linePage.locator('[data-draw-line] > span').first().evaluate(ink => getComputedStyle(ink).animationName), 'none');
+  await linePage.emulateMedia({ reducedMotion: 'no-preference' });
+  assert.equal(await linePage.locator('[data-line-state="pending"]').count(), 0, 'Changing preferences must leave rules complete');
+  await lineContext.close();
+  console.log('PASS scroll-entry rules, tall grid dividers and mobile rails, SVG drawing, 1.5s/2s timing, stable layout, one-time playback, and reduced-motion changes');
+
   for (const locale of ["fa", "en"]) {
     const route = locale === "fa" ? "/" : "/en";
     for (const width of [360, 768, 1440]) {
@@ -141,9 +219,8 @@ try {
       assert.equal(await page.locator("#portfolio a[data-company]").count(), 3);
       for (const [company, domain] of [["wishwork", "wishwork.org"], ["spash", "spash.space"], ["iranchina", "www.iranchina.org"]]) {
         const link = page.locator(`#portfolio a[data-company="${company}"]`);
-        assert.equal(await link.getAttribute("href"), `https://${domain}`);
-        assert.equal(await link.getAttribute("target"), "_blank");
-        assert.ok((await link.getAttribute("rel")).includes("noopener"));
+        assert.equal(await link.getAttribute("href"), `${locale === 'en' ? '/en' : ''}/portfolio/${company}`);
+        assert.equal(await link.getAttribute("target"), null);
         const logo = link.locator("img");
         await logo.scrollIntoViewIfNeeded();
         await logo.evaluate(image => image.decode());
@@ -156,6 +233,7 @@ try {
       assert.equal(await page.locator('link[rel="alternate"][hreflang="fa"]').getAttribute("href"), "https://shirani.co");
       assert.equal(await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute("href"), "https://shirani.co/en");
       assert.equal(await page.locator("#contact a").getAttribute("href"), "mailto:contact@shirani.co");
+      assert.equal(await page.getByText('کشف کنید', { exact: true }).count(), 0);
       assert.equal(await page.locator('[src*="design/"], [href*="design/"]').count(), 0);
       const toggle = page.locator('button[aria-controls="main-navigation"]');
       if (width <= 1000) {
@@ -181,6 +259,60 @@ try {
       console.log(`PASS ${route} at ${width}px: layout, language, metadata, navigation, portfolio logos and links, contact`);
     }
   }
+  const profileContext = await browser.newContext({ reducedMotion: 'reduce' });
+  const profilePage = await profileContext.newPage();
+  profilePage.on('pageerror', error => errors.push(error.message));
+  for (const locale of ['fa', 'en']) for (const [id, domain] of [['wishwork', 'wishwork.org'], ['spash', 'spash.space'], ['iranchina', 'www.iranchina.org']]) {
+    const profilePath = `${locale === 'en' ? '/en' : ''}/portfolio/${id}`;
+    for (const width of [360, 768, 1440]) {
+      await profilePage.setViewportSize({ width, height: 900 });
+      const response = await profilePage.goto(`${base}${profilePath}`, { waitUntil: 'networkidle' });
+      assert.equal(response.status(), 200);
+      await profilePage.evaluate(() => document.fonts.ready);
+      assert.equal(await profilePage.locator('html').getAttribute('lang'), locale);
+      assert.equal(await profilePage.locator('html').getAttribute('dir'), locale === 'fa' ? 'rtl' : 'ltr');
+      assert.equal(await profilePage.locator('h1').count(), 1);
+      assert.ok(await profilePage.locator('h1').innerText());
+      assert.equal(await profilePage.locator('main article').count(), 3);
+      assert.equal(await profilePage.locator('#backing h2').innerText(), locale === 'fa' ? 'چرا همراه شدیم' : 'Why we backed them');
+      assert.equal(await profilePage.locator('#backing h3').count(), 2);
+      assert.ok((await profilePage.locator('#backing').innerText()).includes(locale === 'fa' ? 'ارزش' : 'value'));
+      assert.ok(await profilePage.locator('#backing p').evaluateAll(paragraphs => paragraphs.every(paragraph => paragraph.textContent.trim().length > 50)), 'Each business needs a complete investment rationale');
+      assert.equal(await profilePage.locator('canvas').count(), 0, 'Company profiles should not load the hero scene');
+      assert.ok(await profilePage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Profile overflow: ${profilePath}/${width}`);
+      assert.equal(await profilePage.locator('link[rel="canonical"]').getAttribute('href'), `https://shirani.co${profilePath}`);
+      assert.equal(await profilePage.locator('link[rel="alternate"][hreflang="fa"]').getAttribute('href'), `https://shirani.co/portfolio/${id}`);
+      assert.equal(await profilePage.locator('link[rel="alternate"][hreflang="en"]').getAttribute('href'), `https://shirani.co/en/portfolio/${id}`);
+      assert.ok((await profilePage.title()).includes(await profilePage.locator('h1').innerText()));
+      const website = profilePage.locator('[data-company-website]');
+      assert.equal(await website.getAttribute('href'), `https://${domain}`);
+      assert.equal(await website.getAttribute('target'), '_blank');
+      assert.ok((await website.getAttribute('rel')).includes('noopener'));
+      const image = profilePage.locator('main img');
+      await image.evaluate(image => image.decode());
+      assert.ok(await image.evaluate(image => image.naturalWidth > 0 && image.src.startsWith(location.origin)));
+      assert.equal(await profilePage.locator('header nav a[href$="#portfolio"]').getAttribute('href'), `${locale === 'fa' ? '/' : '/en'}#portfolio`);
+      await profilePage.screenshot({ path: `test-results/${locale}-${id}-${width}-profile.png`, fullPage: true });
+    }
+    const otherPath = `${locale === 'fa' ? '/en' : ''}/portfolio/${id}`;
+    await profilePage.locator('header a[hreflang]').click();
+    await profilePage.waitForURL(`${base}${otherPath}`);
+    assert.equal(await profilePage.locator('html').getAttribute('lang'), locale === 'fa' ? 'en' : 'fa');
+  }
+  await profilePage.setViewportSize({ width: 360, height: 900 });
+  await profilePage.goto(base, { waitUntil: 'networkidle' });
+  await profilePage.locator('#portfolio [data-company="wishwork"]').click();
+  await profilePage.waitForURL(`${base}/portfolio/wishwork`);
+  await profilePage.locator('button[aria-controls="main-navigation"]').click();
+  await profilePage.locator('header nav a[href="/#portfolio"]').click();
+  await profilePage.waitForURL(`${base}/#portfolio`);
+  assert.equal(await profilePage.locator('#portfolio').isVisible(), true);
+  for (const prefix of ['', '/en']) assert.equal((await fetch(`${base}${prefix}/portfolio/unknown`)).status, 404);
+  const sitemap = await (await fetch(`${base}/sitemap.xml`)).text();
+  for (const id of ['wishwork', 'spash', 'iranchina']) for (const prefix of ['', '/en']) assert.ok(sitemap.includes(`https://shirani.co${prefix}/portfolio/${id}`));
+  await profileContext.close();
+  console.log('PASS six static portfolio profiles at three widths: investment rationale, local logos, internal card navigation, official websites, same-company language switching, metadata, sitemap and 404s');
+
   await page.goto(base);
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.getAttribute("href")), "#main");
@@ -246,6 +378,8 @@ try {
   assert.equal(await reducedPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').transform),'none');
   assert.equal(await reducedPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').animationName),'none');
   assert.equal(await reducedPage.locator('header').evaluate(header=>getComputedStyle(header,'::before').opacity),'0');
+  assert.equal(await reducedPage.locator('[data-line-state="pending"]').count(),0);
+  assert.equal(await reducedPage.locator('[data-draw-line] > span').first().evaluate(ink=>getComputedStyle(ink).animationName),'none');
   await reducedContext.close();
 
   const blocked = await browser.newContext();
@@ -268,6 +402,8 @@ try {
   assert.equal(await noScriptPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').transform),'none');
   assert.equal(await noScriptPage.locator('header').evaluate(header=>getComputedStyle(header,'::after').animationName),'none');
   assert.equal(await noScriptPage.locator('header').evaluate(header=>getComputedStyle(header,'::before').opacity),'0');
+  assert.equal(await noScriptPage.locator('[data-draw-line] > span').first().evaluate(ink=>getComputedStyle(ink).transform),'none');
+  assert.equal(await noScriptPage.locator('[data-draw-art] path').first().evaluate(path=>getComputedStyle(path).strokeDasharray),'none');
   await noScript.close();
   console.log("PASS timed reveal, offscreen/hidden-tab suspension, still final pose, replay, reduced motion, unavailable WebGL and no-JS fallback");
   assert.deepEqual(errors, [], "Browser runtime errors");

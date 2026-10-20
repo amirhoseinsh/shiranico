@@ -5,9 +5,9 @@ import type { Locale, SiteContent } from "@/lib/content";
 import { ArchMark, Arrow, Wordmark } from "./brand";
 import styles from "./home.module.css";
 
-type NavigationProps = Pick<SiteContent, "navigation" | "name" | "menu" | "closeMenu" | "language" | "languageLabel"> & { locale: Locale };
+type NavigationProps = Pick<SiteContent, "navigation" | "name" | "menu" | "closeMenu" | "language" | "languageLabel"> & { locale: Locale; sectionPrefix?: string; languageHref?: string };
 
-export function Navigation({ locale, navigation, name, menu, closeMenu, language, languageLabel }: NavigationProps) {
+export function Navigation({ locale, navigation, name, menu, closeMenu, language, languageLabel, sectionPrefix = "", languageHref = locale === "fa" ? "/en" : "/" }: NavigationProps) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -42,13 +42,13 @@ export function Navigation({ locale, navigation, name, menu, closeMenu, language
         <span className={styles.brandType}><Wordmark /><span dir="ltr">INVEST / BUILD / OWN</span></span>
       </a>
       <div className={styles.headerTools}>
-        <a href={locale === "fa" ? "/en" : "/"} hrefLang={locale === "fa" ? "en" : "fa"} lang={locale === "fa" ? "en" : "fa"} aria-label={languageLabel} className={styles.language}>{language}<Arrow /></a>
+        <a href={languageHref} hrefLang={locale === "fa" ? "en" : "fa"} lang={locale === "fa" ? "en" : "fa"} aria-label={languageLabel} className={styles.language}>{language}<Arrow /></a>
         <button ref={toggleRef} className={styles.menuToggle} type="button" aria-expanded={open} aria-controls="main-navigation" aria-label={open ? closeMenu : menu} onClick={() => setOpen(!open)}>
           <span className={open ? styles.menuOpen : ""} /><span className={open ? styles.menuOpen : ""} />
         </button>
       </div>
       <nav id="main-navigation" aria-label={locale === "fa" ? "فهرست اصلی" : "Main navigation"} className={`${styles.navigation} ${open ? styles.navigationOpen : ""}`}>
-        {navigation.map((item) => <a key={item.id} href={`#${item.id}`} onClick={() => setOpen(false)}>{item.label}{item.id === "contact" ? <Arrow /> : null}</a>)}
+        {navigation.map((item) => <a key={item.id} href={`${sectionPrefix}#${item.id}`} onClick={() => setOpen(false)}>{item.label}{item.id === "contact" ? <Arrow /> : null}</a>)}
       </nav>
     </header>
   );

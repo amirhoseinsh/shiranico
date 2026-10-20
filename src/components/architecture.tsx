@@ -7,7 +7,7 @@ export function Architecture({ replayLabel }: { replayLabel: string }) {
 
 export function SectorGlyph({ index }: { index: number }) {
   return (
-    <svg viewBox="0 0 100 80" fill="none" aria-hidden="true" className={styles.sectorGlyph}>
+    <svg viewBox="0 0 100 80" fill="none" aria-hidden="true" className={styles.sectorGlyph} data-draw-art="">
       <g stroke="currentColor" strokeWidth=".9">
         {index === 0 ? <><path d="M15 60L50 42L85 60L50 78L15 60ZM15 42L50 24L85 42L50 60L15 42ZM15 24L50 6L85 24L50 42L15 24Z"/><path d="M15 24V60M85 24V60M50 42V78" opacity=".45"/></> : null}
         {index === 1 ? <><circle cx="50" cy="40" r="25"/><circle cx="50" cy="40" r="15"/><path d="M50 0V11M50 69V80M10 40H21M79 40H90M21 11L29 19M71 61L79 69M21 69L29 61M71 19L79 11"/><path d="M50 15L42 42H56L48 65"/></> : null}

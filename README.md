@@ -37,6 +37,10 @@ The header divider draws from the brand side (right in Persian, left in English)
 
 On phones the artwork follows the headline, before the description and contact links, so it fits within the first screen at common phone sizes. Playback waits until 60% of the canvas is visible, with an adjusted threshold for short viewports; a sliver touching the screen does not start it. Language arrows and decorative separators use SVG paths to avoid emoji substitution on Safari.
 
+Scroll motion follows the divider behavior observed on [8VC](https://www.8vc.com/): horizontal rules draw over 1.5 seconds and vertical rules over 2 seconds, once on viewport entry, then remain complete. Section separators, portfolio frames and underlines, sector rows, section-number separators, contact and footer rules all participate. Sector glyphs and the about arch/orbits draw their actual SVG strokes with a restrained stagger. The shared `DrawLine` component preserves a stable layout box; one `IntersectionObserver` in `ScrollLines` starts CSS transform and stroke animations, without a scroll listener or animation library. Persian rules draw right-to-left and English rules left-to-right. Reduced motion or disabled JavaScript shows complete lines immediately; changing motion preferences never erases completed lines. Header and hero retain their existing opening sequences.
+
+Tall structural dividers split the hero's text/art columns, separate the approach and portfolio columns, run through the sector table, and divide the about and contact layouts. `ColumnRule` positions these full-height strokes in the grid gutters. On phones the dividers adapt to a leading vertical rail along the stacked sections, keeping the artwork visible in the first screen and leaving the copy unobstructed. The about divider joins full-width top and bottom rules.
+
 To regenerate that tracked fallback and the ignored motion review package, use Node.js 24 and run:
 
 ```sh
@@ -53,7 +57,9 @@ The portfolio appears in both languages and is editable in the content dictionar
 - Spash: [website](https://spash.space), [official logo](https://spash.space/_next/static/media/logo.002aowi4b1zfo.svg).
 - IranChina: [website](https://www.iranchina.org), [official mark](https://www.iranchina.org/favicon.svg?v=brush-1).
 
-Company descriptions summarize their public websites; portfolio membership was supplied by the site owner. Links open the respective websites in a separate tab. Future logo updates belong in `public/portfolio/`.
+Company descriptions summarize their public websites; portfolio membership was supplied by the site owner. Homepage cards open dedicated profiles at `/portfolio/wishwork`, `/portfolio/spash` and `/portfolio/iranchina`, with matching `/en/portfolio/…` pages. Profiles share a server-rendered layout, local logos, business introductions and product/service summaries. Website links inside profiles open the official sites in a separate tab. Header and footer language switches keep the selected company; section navigation returns to the matching language's homepage. Each profile has its own canonical URL, language alternates and sitemap entry. Unknown companies return 404.
+
+Edit introductions in `src/lib/portfolio.ts`. Public facts were checked against the official company sites and the [Wish Work software](https://wishwork.org/solution/software/), [AI](https://wishwork.org/solution/ai/) and [ERP](https://wishwork.org/solution/erp/) pages, [Spash provider guide](https://spash.space/provider-guide), and [IranChina services](https://www.iranchina.org/services). Investment reasons are separate, in `backingStories`. They express the owner's stated mission: backing lasting, useful value beyond hype, with a distinct explanation for each business. The copy makes no claims about returns or deal terms. Every company requires a rationale in both languages. Future logo updates belong in `public/portfolio/`.
 
 ## Browser verification
 
