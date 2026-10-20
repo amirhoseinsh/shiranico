@@ -35,7 +35,7 @@
 .navigation a:last-child { color: var(--color-paper); }
 .headerTools { order: 2; display: flex; align-items: center; gap: 24px; }
 .language { direction: ltr; display: flex; gap: 10px; align-items: center; padding: 10px 0; font-size: 13px; }
-.language span { font-size: 15px; color: #95a699; }
+.language svg { width: 14px; height: 14px; flex-shrink: 0; color: #95a699; }
 .language:hover { color: var(--color-teal); }
 .menuToggle { display: none; }
 .hero { position: relative; display: grid; grid-template-columns: 1.02fr 1fr; align-items: center; min-height: 730px; padding-top: 54px; padding-bottom: 112px; isolation: isolate; overflow: clip; }
@@ -79,6 +79,7 @@
 .focusStrip > div { display: flex; justify-content: space-between; align-items: center; }
 .focusStrip a { display: flex; align-items: center; justify-content: space-between; padding-block: 23px; font-size: 12px; gap: clamp(20px, 5vw, 80px); color: #d3dbd1; transition: color .2s; }
 .focusStrip a span { color: #6a8d76; font-size: 14px; }
+.focusStrip a span svg { width: 14px; height: 14px; }
 .focusStrip a:last-child span { display: none; }
 .focusStrip a:hover { color: var(--color-teal); }
 .lightBody { background: var(--color-paper); color: var(--color-ink); }
@@ -250,16 +251,18 @@
   .brandType > span { font-size: 6px; letter-spacing: 2.5px; }
   .headerTools { gap: 20px; }
   .language { font-size: 12px; }
-  .hero { grid-template-columns: 1fr; padding-top: 48px; padding-bottom: 80px; min-height: 0; }
-  .heroCopy { padding: 0; }
-  .heroEyebrow { font-size: 12px; margin-bottom: 27px; }
-  .hero h1 { font-size: clamp(55px, 11vw, 76px); line-height: 1.25; letter-spacing: -1px; }
-  .heroDescription { font-size: 15px; margin-top: 24px; max-width: 440px; line-height: 1.95; }
+  .hero { grid-template-columns: 1fr; padding-top: 28px; padding-bottom: 80px; min-height: 0; }
+  .heroCopy { display: contents; }
+  .heroIntro { order: 0; }
+  .heroDetails { order: 2; }
+  .heroEyebrow { font-size: 12px; margin-bottom: 16px; }
+  .hero h1 { font-size: clamp(42px, 10.8vw, 64px); line-height: 1.25; letter-spacing: -1px; }
+  .heroDescription { font-size: 15px; margin-top: 18px; max-width: 440px; line-height: 1.95; }
   .heroActions { margin-top: 27px; gap: 25px; font-size: 12px; }
   .primaryLink { padding-inline: 18px; gap: 25px; }
-  .architecture { width: 115%; max-width: 620px; margin: 0 auto; margin-inline-start: -7.5%; height: 420px; margin-block: 17px 5px; }
+  .architecture { order: 1; width: 100%; max-width: 440px; margin: 0 auto; height: clamp(280px, 72vw, 340px); margin-block: 12px 5px; }
   .motionStage { inset: 0 0 30px; }
-  .motionFooter { inset-inline: 10%; bottom: -7px; }
+  .motionFooter { inset-inline: 5%; bottom: 0; }
   .motionToggle { font-size: 9px; gap: 6px; }
   .heroBase { bottom: 23px; font-size: 9px; }
   .heroCoordinates { display: none; }
@@ -319,7 +322,7 @@
   .footerBottom { flex-wrap: wrap; gap: 17px; padding-block: 22px; font-size: 9px; }
   .footerBottom > span:first-child { width: 100%; }
   .footerBottom > span:last-child { margin-inline-start: auto; }
-  :global(html[lang="en"]) .hero h1 { font-size: clamp(60px, 12vw, 80px); }
+  :global(html[lang="en"]) .hero h1 { font-size: clamp(44px, 11.5vw, 72px); }
   :global(html[lang="en"]) .heroDescription { line-height: 1.8; }
   :global(html[lang="en"]) .approachTitle { margin-top: 22px; }
   :global(html[lang="en"]) .approachItem h3 { font-size: 30px; }
@@ -332,7 +335,7 @@
   .brandType > span { letter-spacing: 1.7px; }
   .brand { gap: 9px; }
   .headerTools { gap: 12px; }
-  .hero h1 { font-size: 53px; }
+  .hero h1 { font-size: 42px; }
   .heroActions { gap: 18px; font-size: 11px; }
   .primaryLink { padding-inline: 13px; gap: 16px; }
   .approachItem { grid-template-columns: 1fr; }

@@ -35,6 +35,8 @@ The geometric definition and timing live in `src/lib/arch-model.ts`; explicit sm
 
 The header divider draws from the brand side (right in Persian, left in English), after a 120ms delay over 880ms, with a brief teal leading highlight. CSS starts it independently of WebGL and hydration; navigation remains usable immediately. Arch replay does not repeat the divider. CSS scripting and reduced-motion media queries give no-JavaScript and reduced-motion visitors the completed, static line.
 
+On phones the artwork follows the headline, before the description and contact links, so it fits within the first screen at common phone sizes. Playback waits until 60% of the canvas is visible, with an adjusted threshold for short viewports; a sliver touching the screen does not start it. Language arrows and decorative separators use SVG paths to avoid emoji substitution on Safari.
+
 To regenerate that tracked fallback and the ignored motion review package, use Node.js 24 and run:
 
 ```sh

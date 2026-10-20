@@ -110,10 +110,28 @@ export function KineticArch({ replayLabel }: { replayLabel: string }) {
       render();
       schedule();
     };
-    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; syncPlayback(); }, { threshold: .08 });
-    const resize = new ResizeObserver(() => scene?.resize(canvas.clientWidth, canvas.clientHeight));
-    observer.observe(root);
+    let observer: IntersectionObserver | null = null;
+    let visibilityThreshold = 0;
+    function observeVisibility() {
+      // Watch the canvas, not its padded wrapper. On short viewports, require
+      // 60% of the available viewport height rather than an unreachable ratio.
+      const threshold = .6 * Math.min(1, window.innerHeight / Math.max(canvas.clientHeight, 1));
+      if (observer && threshold === visibilityThreshold) return;
+      observer?.disconnect();
+      visibilityThreshold = threshold;
+      observer = new IntersectionObserver(([entry]) => {
+        visible = entry.isIntersecting && entry.intersectionRatio >= threshold;
+        syncPlayback();
+      }, { threshold: [0, threshold] });
+      observer.observe(canvas);
+    }
+    const resize = new ResizeObserver(() => {
+      scene?.resize(canvas.clientWidth, canvas.clientHeight);
+      observeVisibility();
+    });
+    observeVisibility();
     resize.observe(canvas);
+    window.addEventListener("resize", observeVisibility, { passive: true });
     reduced.addEventListener("change", syncPlayback);
     document.addEventListener("visibilitychange", syncPlayback);
     canvas.addEventListener("webglcontextlost", onContextLost);
@@ -122,8 +140,9 @@ export function KineticArch({ replayLabel }: { replayLabel: string }) {
       disposed = true;
       generation++;
       stop();
-      observer.disconnect();
+      observer?.disconnect();
       resize.disconnect();
+      window.removeEventListener("resize", observeVisibility);
       reduced.removeEventListener("change", syncPlayback);
       document.removeEventListener("visibilitychange", syncPlayback);
       canvas.removeEventListener("webglcontextlost", onContextLost);

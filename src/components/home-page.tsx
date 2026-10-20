@@ -25,12 +25,16 @@ export function HomePage({ locale }: { locale: Locale }) {
         <main id="main" tabIndex={-1}>
           <section className={`${styles.hero} ${styles.container}`} aria-labelledby="hero-title">
             <div className={styles.heroCopy}>
-              <div className={styles.heroEyebrow}><span />{copy.hero.eyebrow}</div>
-              <h1 id="hero-title">{copy.hero.headline.map((line, index) => <span key={line} className={index === 2 ? styles.heroEmphasis : undefined}>{index > 0 ? " " : ""}{line}</span>)}</h1>
-              <p className={styles.heroDescription}>{copy.hero.description}</p>
-              <div className={styles.heroActions}>
-                <a href="#approach" className={styles.primaryLink}>{copy.hero.primary}<Arrow /></a>
-                <a href="#contact" className={styles.secondaryLink}>{copy.hero.secondary}</a>
+              <div className={styles.heroIntro}>
+                <div className={styles.heroEyebrow}><span />{copy.hero.eyebrow}</div>
+                <h1 id="hero-title">{copy.hero.headline.map((line, index) => <span key={line} className={index === 2 ? styles.heroEmphasis : undefined}>{index > 0 ? " " : ""}{line}</span>)}</h1>
+              </div>
+              <div className={styles.heroDetails}>
+                <p className={styles.heroDescription}>{copy.hero.description}</p>
+                <div className={styles.heroActions}>
+                  <a href="#approach" className={styles.primaryLink}>{copy.hero.primary}<Arrow /></a>
+                  <a href="#contact" className={styles.secondaryLink}>{copy.hero.secondary}</a>
+                </div>
               </div>
             </div>
             <Architecture replayLabel={copy.hero.replayMotion} />
@@ -41,7 +45,7 @@ export function HomePage({ locale }: { locale: Locale }) {
             </div>
           </section>
           <div className={styles.focusStrip}>
-            <div className={styles.container}>{copy.sectors.items.map((item) => <a key={item.english} href="#sectors">{item.title}<span aria-hidden="true">✳</span></a>)}</div>
+            <div className={styles.container}>{copy.sectors.items.map((item) => <a key={item.english} href="#sectors">{item.title}<span aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth=".8"><path d="M8 1V15M1 8H15M3 3L13 13M3 13L13 3" /></svg></span></a>)}</div>
           </div>
           <div className={styles.lightBody}>
             <section id="approach" tabIndex={-1} className={`${styles.approach} ${styles.container}`} aria-labelledby="approach-title">

@@ -63,6 +63,69 @@ try {
     }
   }
   console.log("PASS header drawing before application scripts: brand-side direction in both languages, 120ms delay, 880ms duration, highlight and completion");
+
+  // Real phone heights: the artwork belongs in the first screen, before the description.
+  const phoneContext = await browser.newContext({ reducedMotion: 'reduce' });
+  const phonePage = await phoneContext.newPage();
+  phonePage.on('pageerror', error => errors.push(error.message));
+  for (const locale of ['fa', 'en']) {
+    const route = locale === 'fa' ? '/' : '/en';
+    for (const [width, height] of [[320, 568], [360, 640], [390, 844]]) {
+      await phonePage.setViewportSize({ width, height });
+      await phonePage.goto(`${base}${route}`, { waitUntil: 'networkidle' });
+      await phonePage.evaluate(() => document.fonts.ready);
+      const layout = await phonePage.evaluate(() => {
+        const stage = document.querySelector('#arch-sculpture').getBoundingClientRect();
+        const heading = document.querySelector('h1').getBoundingClientRect();
+        const description = document.querySelector('h1').closest('section').querySelector('p').getBoundingClientRect();
+        return { top: stage.top, bottom: stage.bottom, headingBottom: heading.bottom, descriptionTop: description.top, overflow: document.documentElement.scrollWidth > innerWidth };
+      });
+      assert.ok(layout.top >= layout.headingBottom, `${locale}: artwork should follow the headline`);
+      assert.ok(layout.bottom <= height, `${locale}/${width}x${height}: artwork should fit in the first screen (${layout.bottom})`);
+      assert.ok(layout.descriptionTop >= layout.bottom, `${locale}: description should follow the artwork on phones`);
+      assert.equal(layout.overflow, false);
+      assert.equal(await phonePage.locator('header a[hreflang] svg').count(), 1);
+      assert.ok(!/[↗↖⬆⬇]/u.test(await phonePage.locator('header a[hreflang]').innerText()), 'Language arrow must be SVG, not a font glyph');
+      await phonePage.screenshot({ path: `test-results/${locale}-${width}x${height}-first-screen.png` });
+    }
+  }
+  await phoneContext.close();
+
+  // Land below the hero, then expose just a sliver before bringing it fully into view.
+  const entryContext = await browser.newContext({ viewport: { width: 360, height: 320 } });
+  const entryPage = await entryContext.newPage();
+  entryPage.on('pageerror', error => errors.push(error.message));
+  for (const locale of ['fa', 'en']) {
+    await entryPage.setViewportSize({ width: 360, height: 320 });
+    await entryPage.goto(`${base}${locale === 'fa' ? '/' : '/en'}#contact`, { waitUntil: 'networkidle' });
+    const motion = entryPage.locator('[data-motion-art]');
+    await entryPage.waitForFunction(() => document.querySelector('[data-motion-art]')?.getAttribute('data-running') === 'false');
+    // A browser may briefly pass the artwork while scrolling to the initial
+    // anchor. Preserve that elapsed time rather than assuming it was never seen.
+    const entryTime = Number(await motion.getAttribute('data-elapsed'));
+    assert.ok(entryTime < 500, 'Opening must remain near the drawing start when landing below the hero');
+    await entryPage.evaluate(() => {
+      const stage = document.querySelector('#arch-sculpture').getBoundingClientRect();
+      window.scrollTo({ top: scrollY + stage.bottom - 40, behavior: 'instant' });
+    });
+    await entryPage.waitForTimeout(400);
+    assert.equal(Number(await motion.getAttribute('data-elapsed')), entryTime, 'A 40px sliver must not start or resume the opening');
+    await entryPage.locator('#arch-sculpture').scrollIntoViewIfNeeded();
+    await entryPage.waitForFunction(time => Number(document.querySelector('[data-motion-art]')?.getAttribute('data-elapsed')) > time + 100, entryTime);
+    assert.ok(Number(await motion.getAttribute('data-elapsed')) < 1000, 'Entering the artwork should start from the drawing');
+    await entryPage.waitForFunction(() => document.querySelector('[data-motion-art]')?.getAttribute('data-phase') === 'settled', undefined, { timeout: 20000 });
+    await entryPage.setViewportSize({ width: 360, height: 640 });
+    await entryPage.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await entryPage.screenshot({ path: `test-results/${locale}-360x640-animated-hero.png` });
+  }
+  // A short landscape viewport must still be able to trigger playback.
+  await entryPage.setViewportSize({ width: 844, height: 320 });
+  await entryPage.goto(base, { waitUntil: 'networkidle' });
+  await entryPage.locator('#arch-sculpture').scrollIntoViewIfNeeded();
+  await entryPage.waitForFunction(() => Number(document.querySelector('[data-motion-art]')?.getAttribute('data-elapsed')) > 100);
+  await entryContext.close();
+  console.log('PASS SVG language arrow, first-screen artwork at three phone sizes in both languages, delayed entry playback, and short landscape viewport');
+
   for (const locale of ["fa", "en"]) {
     const route = locale === "fa" ? "/" : "/en";
     for (const width of [360, 768, 1440]) {
